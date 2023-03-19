@@ -84,6 +84,23 @@ services:
     networks:
       - learn-firehose
 
+  ## FIREHOSE - sink log
+  json-sink-log:
+    container_name: json-sink-log
+    image: odpf/firehose:0.7.4
+    depends_on:
+      kafka0:
+        condition: service_healthy
+    environment:
+      SOURCE_KAFKA_BROKERS: kafka0:29092
+      SOURCE_KAFKA_CONSUMER_GROUP_ID: json-consumer-sink-log
+      SOURCE_KAFKA_TOPIC: flag_json
+      SINK_TYPE: log
+      SOURCE_KAFKA_CONSUMER_CONFIG_AUTO_OFFSET_RESET: latest
+      INPUT_SCHEMA_DATA_TYPE: json
+    networks:
+      - learn-firehose
+
 networks:
   learn-firehose:
     driver: "bridge"
