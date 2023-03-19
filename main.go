@@ -1,7 +1,19 @@
 package main
 
-import "github.com/cikupin/learn-firehose/cmd"
+import (
+	"log"
+	"time"
+	_ "time/tzdata"
+
+	"github.com/cikupin/learn-firehose/cmd"
+)
 
 func main() {
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	time.Local = loc
+
 	cmd.Execute()
 }

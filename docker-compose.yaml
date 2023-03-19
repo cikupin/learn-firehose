@@ -7,6 +7,13 @@ services:
       - "9092:9092"
       - "9101:9101"
       - "9997:9997"
+      - "29092:29092"
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
@@ -27,6 +34,8 @@ services:
     volumes:
       - ./scripts/update_run.sh:/tmp/update_run.sh
     command: "bash -c 'if [ ! -f /tmp/update_run.sh ]; then echo \"ERROR: Did you forget the update_run.sh file that came with this docker-compose.yml file?\" && exit 1 ; else /tmp/update_run.sh && /etc/confluent/docker/run ; fi'"
+    networks:
+      - learn-firehose
 
   kafka-ui:
     container_name: kafka-ui
@@ -34,9 +43,47 @@ services:
     ports:
       - 8080:8080
     depends_on:
-      - kafka0
+      kafka0:
+        condition: service_healthy
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka0:29092
       KAFKA_CLUSTERS_0_METRICS_PORT: 9997
       DYNAMIC_CONFIG_ENABLED: 'true'
+    networks:
+      - learn-firehose
+
+  ### producer
+  producer-grpc:
+    container_name: producer-grpc
+    image: learn-firehose:latest
+    depends_on:
+      kafka0:
+        condition: service_healthy
+    environment:
+      KAFKA_HOST: kafka0
+      KAFKA_PORT: 29092
+      KAFKA_TOPIC_GRPC: flag_grpc
+    command:
+      - grpc-producer
+    networks:
+      - learn-firehose
+  
+  producer-json:
+    container_name: producer-json
+    image: learn-firehose:latest
+    depends_on:
+      kafka0:
+        condition: service_healthy
+    environment:
+      KAFKA_HOST: kafka0
+      KAFKA_PORT: 29092
+      KAFKA_TOPIC_JSON: flag_json
+    command:
+      - json-producer
+    networks:
+      - learn-firehose
+
+networks:
+  learn-firehose:
+    driver: "bridge"
