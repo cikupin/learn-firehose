@@ -8,10 +8,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ThreeDotsLabs/watermill"
 	wmkafka "github.com/ThreeDotsLabs/watermill-kafka/v2/pkg/kafka"
 	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/cikupin/learn-firehose/config"
+	"github.com/cikupin/learn-firehose/factory"
 	"github.com/cikupin/learn-firehose/payload"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
@@ -32,17 +32,7 @@ func init() {
 }
 
 func doGRPC() {
-	kafka0Host := fmt.Sprintf("%s:%d", config.Cfg.Kafka.Host, config.Cfg.Kafka.Port)
-	pubConfig := wmkafka.PublisherConfig{
-		Brokers:               []string{kafka0Host},
-		Marshaler:             wmkafka.DefaultMarshaler{},
-		OverwriteSaramaConfig: wmkafka.DefaultSaramaSyncPublisherConfig(),
-	}
-
-	publisher, err := wmkafka.NewPublisher(pubConfig, watermill.NewStdLogger(true, false))
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
+	publisher := factory.NewKafkaPublisher()
 
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
