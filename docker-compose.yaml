@@ -101,6 +101,42 @@ services:
     networks:
       - learn-firehose
 
+  ## Firehose - sink mongoDB
+  mongo:
+    image: mongo:6
+    expose:
+      - 27017
+    networks:
+        - learn-firehose
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
+    networks:
+        - learn-firehose
+  json-sink-mongo:
+    container_name: json-sink-mongo
+    image: odpf/firehose:0.7.4
+    depends_on:
+      kafka0:
+        condition: service_healthy
+    environment:
+      SOURCE_KAFKA_BROKERS: kafka0:29092
+      SOURCE_KAFKA_CONSUMER_GROUP_ID: json-consumer-sink-http
+      SOURCE_KAFKA_TOPIC: flag_json
+      SINK_TYPE: mongodb
+      SOURCE_KAFKA_CONSUMER_CONFIG_AUTO_OFFSET_RESET: latest
+      SINK_MONGO_CONNECTION_URLS: mongo:27017
+      SINK_MONGO_DB_NAME: sink_json_db
+      SINK_MONGO_COLLECTION_NAME: sink_json_coll
+      SINK_MONGO_PRIMARY_KEY: id
+      SINK_MONGO_INPUT_MESSAGE_TYPE: JSON
+    networks:
+        - learn-firehose
+
 networks:
   learn-firehose:
     driver: "bridge"
