@@ -164,9 +164,59 @@ services:
       SOURCE_KAFKA_BROKERS: kafka0:29092
       SOURCE_KAFKA_CONSUMER_GROUP_ID: json-consumer-sink-log
       SOURCE_KAFKA_TOPIC: flag_json
-      SINK_TYPE: log
       SOURCE_KAFKA_CONSUMER_CONFIG_AUTO_OFFSET_RESET: latest
+      SINK_TYPE: log
       INPUT_SCHEMA_DATA_TYPE: json
+    networks:
+      - learn-firehose
+
+  grpc-sink-log:
+    container_name: grpc-sink-log
+    image: odpf/firehose:0.7.4
+    depends_on:
+      kafka0:
+        condition: service_healthy
+      stencil-server:
+        condition: service_healthy
+    environment:
+      SOURCE_KAFKA_BROKERS: kafka0:29092
+      SOURCE_KAFKA_CONSUMER_GROUP_ID: grpc-consumer-sink-log
+      SOURCE_KAFKA_TOPIC: flag_grpc
+      SOURCE_KAFKA_CONSUMER_CONFIG_AUTO_OFFSET_RESET: latest
+      KAFKA_RECORD_PARSER_MODE: message
+      SINK_TYPE: log
+      INPUT_SCHEMA_DATA_TYPE: protobuf
+      INPUT_SCHEMA_PROTO_CLASS: payload.Flag
+      SCHEMA_REGISTRY_STENCIL_ENABLE: true
+      SCHEMA_REGISTRY_STENCIL_URLS: http://stencil-server:8000/v1beta1/namespaces/mynamespace/schemas/flagschema
+    networks:
+      - learn-firehose
+  
+  # filter log with id started with [a,b,c,d,e] character
+  grpc-sink-log-abcde:
+    container_name: grpc-sink-log-abcde
+    image: odpf/firehose:0.7.4
+    depends_on:
+      kafka0:
+        condition: service_healthy
+      stencil-server:
+        condition: service_healthy
+    environment:
+      LOG_LEVEL: debug
+      SOURCE_KAFKA_BROKERS: kafka0:29092
+      SOURCE_KAFKA_CONSUMER_GROUP_ID: grpc-consumer-sink-log-abcde
+      SOURCE_KAFKA_TOPIC: flag_grpc
+      SOURCE_KAFKA_CONSUMER_CONFIG_AUTO_OFFSET_RESET: latest
+      KAFKA_RECORD_PARSER_MODE: message
+      SINK_TYPE: log
+      INPUT_SCHEMA_DATA_TYPE: protobuf
+      INPUT_SCHEMA_PROTO_CLASS: payload.Flag
+      SCHEMA_REGISTRY_STENCIL_ENABLE: true
+      SCHEMA_REGISTRY_STENCIL_URLS: http://stencil-server:8000/v1beta1/namespaces/mynamespace/schemas/flagschema
+      FILTER_ENGINE: JEXL
+      FILTER_SCHEMA_PROTO_CLASS: payload.Flag
+      FILTER_DATA_SOURCE: message
+      FILTER_JEXL_EXPRESSION: flag.getId().charAt(0)=='a'
     networks:
       - learn-firehose
 

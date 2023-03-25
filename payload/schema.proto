@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 option go_package = "github.com/cikupin/learn-firehose/payload";
+option java_package = "com.learnfirehose.payload";
 
 package payload;
 
