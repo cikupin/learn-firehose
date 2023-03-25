@@ -54,6 +54,22 @@ services:
       - learn-firehose
 
   ### producer
+  init-schema:
+    container_name: init-schema
+    image: learn-firehose:latest
+    depends_on:
+      postgre:
+        condition: service_healthy
+      stencil-server:
+        condition: service_healthy
+    environment:
+      STENCIL_HOST: http://stencil-server
+      STENCIL_PORT: 8000
+    command:
+      - init-schema
+    networks:
+      - learn-firehose
+
   producer-grpc:
     container_name: producer-grpc
     image: learn-firehose:latest
@@ -84,6 +100,59 @@ services:
     networks:
       - learn-firehose
 
+  ## Stencil
+  postgre:
+    container_name: postgre
+    image: postgres:15.2-alpine
+    ports:
+     - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: stencil
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -d stencil'"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - learn-firehose
+  
+  stencil-migration:
+    container_name: stencil-migration
+    image: odpf/stencil:0.3.2
+    environment:
+      DB_CONNECTIONSTRING: "postgres://postgres:postgres@postgre:5432/stencil?sslmode=disable"
+    depends_on:
+      postgre:
+        condition: service_healthy
+    command: ["server", "migrate"]
+    networks:
+      - learn-firehose
+  
+  stencil-server:
+    container_name: stencil-server
+    image: odpf/stencil:0.3.2
+    environment:
+      PORT: 8000
+      DB_CONNECTIONSTRING: "postgres://postgres:postgres@postgre:5432/stencil?sslmode=disable"
+    healthcheck:
+      test: nc -z localhost 8000 || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    depends_on:
+      stencil-migration:
+        condition: service_completed_successfully
+      postgre:
+        condition: service_healthy
+    ports:
+     - 8000:8000
+    command: ["server", "start"]
+    networks:
+      - learn-firehose
+
   ## FIREHOSE - sink log
   json-sink-log:
     container_name: json-sink-log
@@ -108,6 +177,7 @@ services:
       - 27017
     networks:
         - learn-firehose
+
   mongo-express:
     image: mongo-express
     restart: always
@@ -117,6 +187,7 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
     networks:
         - learn-firehose
+
   json-sink-mongo:
     container_name: json-sink-mongo
     image: odpf/firehose:0.7.4

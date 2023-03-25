@@ -2,6 +2,12 @@ package config
 
 var Cfg config
 
+type config struct {
+	App     appConfig
+	Kafka   kafkaConfig
+	Stencil stencil
+}
+
 type appConfig struct {
 	Port int `env:"APP_PORT" envDefault:"3000"`
 }
@@ -13,7 +19,7 @@ type kafkaConfig struct {
 	TopicJSON string `env:"KAFKA_TOPIC_JSON"`
 }
 
-type config struct {
-	App   appConfig
-	Kafka kafkaConfig
+type stencil struct {
+	Host string `env:"STENCIL_HOST"`
+	Port int    `env:"STENCIL_PORT"`
 }
