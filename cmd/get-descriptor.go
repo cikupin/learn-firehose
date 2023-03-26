@@ -24,7 +24,6 @@ func init() {
 func getDescriptor() {
 	namespace := "mynamespace"
 	schemaName := "flagschema"
-	descriptor := "payload.Flag"
 
 	url := fmt.Sprintf("%s:%d/v1beta1/namespaces/%s/schemas/%s", config.Cfg.Stencil.Host, config.Cfg.Stencil.Port, namespace, schemaName)
 	client, err := stencil.NewClient([]string{url}, stencil.Options{})
@@ -32,10 +31,15 @@ func getDescriptor() {
 		log.Fatalln(err.Error())
 	}
 
-	_, err = client.GetDescriptor(descriptor)
+	_, err = client.GetDescriptor("payload.Flag")
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
+	fmt.Println("descriptor payload.Flag found")
 
-	fmt.Println("descriptor found")
+	_, err = client.GetDescriptor("payload.FlagReply")
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	fmt.Println("descriptor payload.FlagReply found")
 }

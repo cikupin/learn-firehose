@@ -278,17 +278,22 @@ services:
       kafka0:
         condition: service_healthy
     environment:
+      LOG_LEVEL: debug
       SOURCE_KAFKA_BROKERS: kafka0:29092
       SOURCE_KAFKA_CONSUMER_GROUP_ID: grpc-consumer-sink-grpc
       SOURCE_KAFKA_TOPIC: flag_grpc
       SOURCE_KAFKA_CONSUMER_CONFIG_AUTO_OFFSET_RESET: latest
+      SCHEMA_REGISTRY_STENCIL_ENABLE: true
+      SCHEMA_REGISTRY_STENCIL_URLS: http://stencil-server:8000/v1beta1/namespaces/mynamespace/schemas/flagschema
+      INPUT_SCHEMA_DATA_TYPE: protobuf
+      INPUT_SCHEMA_PROTO_CLASS: payload.Flag
       SINK_TYPE: grpc
-      SINK_GRPC_SERVICE_HOST: http://consumer-grpc
+      SINK_GRPC_SERVICE_HOST: consumer-grpc
       SINK_GRPC_SERVICE_PORT: 3000
       SINK_GRPC_METHOD_URL: payload.GrpcSink/Receive
       SINK_GRPC_RESPONSE_SCHEMA_PROTO_CLASS: payload.FlagReply
     networks:
-        - learn-firehose
+      - learn-firehose
 
 networks:
   learn-firehose:
