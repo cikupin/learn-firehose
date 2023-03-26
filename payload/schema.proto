@@ -8,3 +8,11 @@ package payload;
 message Flag {
     string id = 1;
 }
+
+message FlagReply {
+    string message = 1;
+}
+
+service GrpcSink {
+    rpc Receive(Flag) returns (FlagReply) {}
+}

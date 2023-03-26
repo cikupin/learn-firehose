@@ -202,7 +202,6 @@ services:
       stencil-server:
         condition: service_healthy
     environment:
-      LOG_LEVEL: debug
       SOURCE_KAFKA_BROKERS: kafka0:29092
       SOURCE_KAFKA_CONSUMER_GROUP_ID: grpc-consumer-sink-log-abcde
       SOURCE_KAFKA_TOPIC: flag_grpc
@@ -213,10 +212,11 @@ services:
       INPUT_SCHEMA_PROTO_CLASS: payload.Flag
       SCHEMA_REGISTRY_STENCIL_ENABLE: true
       SCHEMA_REGISTRY_STENCIL_URLS: http://stencil-server:8000/v1beta1/namespaces/mynamespace/schemas/flagschema
-      FILTER_ENGINE: JEXL
       FILTER_SCHEMA_PROTO_CLASS: payload.Flag
       FILTER_DATA_SOURCE: message
-      FILTER_JEXL_EXPRESSION: flag.getId().charAt(0)=='a'
+      FILTER_ENGINE: JSON
+      FILTER_ESB_MESSAGE_FORMAT: PROTOBUF
+      FILTER_JSON_SCHEMA: '{"properties":{"id":{"pattern":"^[abcde].*$"}}}'
     networks:
       - learn-firehose
 
@@ -255,6 +255,38 @@ services:
       SINK_MONGO_COLLECTION_NAME: sink_json_coll
       SINK_MONGO_PRIMARY_KEY: id
       SINK_MONGO_INPUT_MESSAGE_TYPE: JSON
+    networks:
+        - learn-firehose
+  
+  ## Firehose - sink GRPC
+  consumer-grpc:
+    container_name: consumer-grpc
+    image: learn-firehose:latest
+    environment:
+      APP_PORT: 3000
+    ports:
+      - "3000:3000"
+    command:
+      - grpc-sink
+    networks:
+      - learn-firehose
+
+  grpc-sink-grpc:
+    container_name: grpc-sink-grpc
+    image: odpf/firehose:0.7.4
+    depends_on:
+      kafka0:
+        condition: service_healthy
+    environment:
+      SOURCE_KAFKA_BROKERS: kafka0:29092
+      SOURCE_KAFKA_CONSUMER_GROUP_ID: grpc-consumer-sink-grpc
+      SOURCE_KAFKA_TOPIC: flag_grpc
+      SOURCE_KAFKA_CONSUMER_CONFIG_AUTO_OFFSET_RESET: latest
+      SINK_TYPE: grpc
+      SINK_GRPC_SERVICE_HOST: http://consumer-grpc
+      SINK_GRPC_SERVICE_PORT: 3000
+      SINK_GRPC_METHOD_URL: payload.GrpcSink/Receive
+      SINK_GRPC_RESPONSE_SCHEMA_PROTO_CLASS: payload.FlagReply
     networks:
         - learn-firehose
 
